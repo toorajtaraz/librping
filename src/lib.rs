@@ -118,8 +118,8 @@ impl Ping {
         }
 
         if let Some(size) = size {
-            if size == 0 {
-                return Err(String::from("BAX SIZE"));
+            if size < 12 {
+                return Err(String::from("BAX SIZE - MIN=12"));
             }
             ping.size = size;
         }
