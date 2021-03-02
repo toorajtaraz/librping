@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["tooraj taraz <tooraj.info@gmail.com>"]
 edition = "2018"
 description = "Fast Rust ping library"
+license-file = "LICENSE"
+homepage = "https://github.com/toorajtaraz/librping/"
+repository = "https://github.com/toorajtaraz/librping/"
+readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
