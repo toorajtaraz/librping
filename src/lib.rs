@@ -1,3 +1,6 @@
+//! Fast and multithread Ping Library.
+//!
+//! [`librpingrs`]: https://github.com/toorajtaraz/librping
 extern crate pnet;
 extern crate ansi_term;
 
@@ -34,11 +37,13 @@ transport_channel_iterator!(
     echo_iter
 );
 
+/// This enum is used as state indicator for ping results.
 pub enum PingResultState {
     NoReply,
     Replied,
 }
 
+/// This struct includes needed data for representing ping results.
 pub struct PingResult {
     pub state: PingResultState,
     pub ping_address: IpAddr,
@@ -46,10 +51,13 @@ pub struct PingResult {
     pub seq: u16,
 }
 
+/// This is the same as IpAddr type but with a diffrent name for a more readable code.
 pub type AddressToBePinged = IpAddr;
 
+/// This type is a Result consisting of ping struct and receiver handle.
 pub type PingRes = Result<(Ping, Receiver<PingResult>), String>;
 
+/// This struct stores all needed data for performing ping task.
 pub struct Ping {
     pub max_rtt: Arc<Duration>,
     pub addresses: Arc<Mutex<BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)>>>,
@@ -65,7 +73,10 @@ pub struct Ping {
     pub run: Arc<Mutex<bool>>,
 }
 
+/// This block implements Ping struct.
 impl Ping {
+    /// Creates new Ping and returns PingRes.
+    /// It requiers root privileges.
     pub fn new(max_rtt: Option<u16>, size: Option<usize>) -> PingRes {
         let addresses: BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)> = BTreeMap::new();
         let (send_handle, recieve_handle) = channel();
@@ -115,10 +126,13 @@ impl Ping {
         Ok((ping, recieve_handle))
     }
 
+    /// This function adds hosts to be pinged.
+    /// You can add new hosts even when other hosts are being pinged.
     pub fn add_address(&self, addr: IpAddr) {
         self.addresses.lock().unwrap().insert(addr, (true, 0, 0, 0, Instant::now()));
     }
-
+    
+    /// This function starts ping task based on Ping struc's configs.
     pub fn run_pings(&self) {
         let rx = self.rx.clone();
         let transport_tx = self.transport_tx.clone();
@@ -149,6 +163,7 @@ impl Ping {
         });
     }
 
+    /// This function is responsible for listening for ICMP ECHO REPLIES.
     pub fn start_listening(&self) {
         let tx = self.tx.clone();
         let transport_rx = self.transport_rx.clone();
