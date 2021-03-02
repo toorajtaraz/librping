@@ -1,6 +1,5 @@
 extern crate pnet;
 extern crate ansi_term;
-extern crate ctrlc;
 
 use ansi_term::Colour::RGB;
 use pnet::packet::Packet;
