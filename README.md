@@ -12,7 +12,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-librping = "0.1.4"
+librping = "0.1.5"
 ```
 ## License
 
