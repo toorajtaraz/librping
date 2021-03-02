@@ -66,7 +66,7 @@ pub struct Ping {
 }
 
 impl Ping {
-    pub fn new(max_rtt: Option<u16>) -> PingRes {
+    pub fn new(max_rtt: Option<u16>, size: Option<usize>) -> PingRes {
         let addresses: BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)> = BTreeMap::new();
         let (send_handle, recieve_handle) = channel();
         let protocol = Layer4(Ipv4(IpNextHeaderProtocols::Icmp));
@@ -97,9 +97,21 @@ impl Ping {
             timer: Arc::new(RwLock::new(Instant::now())),
             run: Arc::new(Mutex::new(false)),
         };
+
         if let Some(rtt_value) = max_rtt {
+            if rtt_value == 0 {
+                return Err(String::from("BAX MAX RTT"));
+            }
             ping.max_rtt = Arc::new(Duration::from_millis(rtt_value as u64));
         }
+
+        if let Some(size) = size {
+            if size == 0 {
+                return Err(String::from("BAX SIZE"));
+            }
+            ping.size = size;
+        }
+
         Ok((ping, recieve_handle))
     }
 
@@ -404,8 +416,33 @@ fn do_ping(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::env;
+
+    fn am_root() -> bool {
+        match env::var("USER") {
+            Ok(val) => val == "root",
+            Err(_) => false,
+        }
+    }
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn create_new_ping_util() {
+        if am_root() {
+            let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
+        } else {
+            writeln!(&mut io::stdout(), "The test 'create_new_ping_util' was skipped as it needs to be run as root").unwrap();
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn create_bad_ping_util() {
+        if am_root() {
+            let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
+        } else {
+            writeln!(&mut io::stdout(), "The test 'create_bad_ping_util' was skipped as it needs to be run as root").unwrap();
+            panic!();
+        }
     }
 }
