@@ -173,6 +173,7 @@ impl Ping {
         let transport_rx = self.transport_rx.clone();
         let run = self.run.clone();
         let addresses = self.addresses.clone();
+        let max_rtt = self.max_rtt.clone();
         thread::spawn(move || {
             let mut receiver = transport_rx.lock().unwrap();
             let mut iter = echo_iter(&mut receiver);
@@ -184,6 +185,9 @@ impl Ping {
                             match addresses.lock().unwrap().get(&addr) {
                                 Some((_, _, _, _, addr_timer)) => {
                                     start_time = *addr_timer;
+                                    if Instant::now().duration_since(start_time) > *max_rtt {
+                                        continue;
+                                    }
                                 }
                                 _ => {
                                     continue;
@@ -220,6 +224,7 @@ impl Ping {
         let transport_rxv6 = self.transport_rxv6.clone();
         let runv6 = self.run.clone();
         let addresses = self.addresses.clone();
+        let max_rtt = self.max_rtt.clone();
 
         thread::spawn(move || {
             let mut receiver = transport_rxv6.lock().unwrap();
@@ -232,6 +237,9 @@ impl Ping {
                             match addresses.lock().unwrap().get(&addr) {
                                 Some((_, _, _, _, addr_timer)) => {
                                     start_time = *addr_timer;
+                                    if Instant::now().duration_since(start_time) > *max_rtt {
+                                        continue;
+                                    }
                                 }
                                 _ => {
                                     continue;
