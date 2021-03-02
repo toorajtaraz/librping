@@ -1,23 +1,23 @@
 //! Fast and multithread Ping Library.
 //!
 //! [`librpingrs`]: https://github.com/toorajtaraz/librping
-extern crate pnet;
 extern crate ansi_term;
+extern crate pnet;
 
 use ansi_term::Colour::RGB;
-use pnet::packet::Packet;
-use pnet::packet::icmp::IcmpTypes;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::packet::icmp::echo_request;
+use pnet::packet::icmp::IcmpTypes;
 use pnet::packet::icmpv6::{Icmpv6Types, MutableIcmpv6Packet};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::Packet;
 use pnet::packet::{icmp, icmpv6};
-use pnet::transport::*;
-use pnet::transport::TransportChannelType::{Layer3, Layer4};
-use pnet::transport::TransportProtocol::{Ipv4, Ipv6};
 use pnet::transport::icmpv6_packet_iter;
 use pnet::transport::transport_channel;
+use pnet::transport::TransportChannelType::{Layer3, Layer4};
+use pnet::transport::TransportProtocol::{Ipv4, Ipv6};
+use pnet::transport::*;
 use pnet::transport::{TransportReceiver, TransportSender};
 use pnet::util;
 use pnet_macros_support::types::*;
@@ -78,7 +78,8 @@ impl Ping {
     /// Creates new Ping and returns PingRes.
     /// It requiers root privileges.
     pub fn new(max_rtt: Option<u16>, size: Option<usize>) -> PingRes {
-        let addresses: BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)> = BTreeMap::new();
+        let addresses: BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)> =
+            BTreeMap::new();
         let (send_handle, recieve_handle) = channel();
         let protocol = Layer4(Ipv4(IpNextHeaderProtocols::Icmp));
         let (transport_tx, transport_rx) = match transport_channel(4096, protocol) {
@@ -129,9 +130,12 @@ impl Ping {
     /// This function adds hosts to be pinged.
     /// You can add new hosts even when other hosts are being pinged.
     pub fn add_address(&self, addr: IpAddr) {
-        self.addresses.lock().unwrap().insert(addr, (true, 0, 0, 0, Instant::now()));
+        self.addresses
+            .lock()
+            .unwrap()
+            .insert(addr, (true, 0, 0, 0, Instant::now()));
     }
-    
+
     /// This function starts ping task based on Ping struc's configs.
     pub fn run_pings(&self) {
         let rx = self.rx.clone();
@@ -180,8 +184,10 @@ impl Ping {
                             match addresses.lock().unwrap().get(&addr) {
                                 Some((_, _, _, _, addr_timer)) => {
                                     start_time = *addr_timer;
-                                },
-                                _ => { continue; }
+                                }
+                                _ => {
+                                    continue;
+                                }
                             }
                             match tx.send(PingResult {
                                 state: PingResultState::Replied,
@@ -226,8 +232,10 @@ impl Ping {
                             match addresses.lock().unwrap().get(&addr) {
                                 Some((_, _, _, _, addr_timer)) => {
                                     start_time = *addr_timer;
-                                },
-                                _ => { continue; }
+                                }
+                                _ => {
+                                    continue;
+                                }
                             }
                             match txv6.send(PingResult {
                                 state: PingResultState::Replied,
@@ -309,7 +317,9 @@ fn do_ping(
     let mut min_rtt_r = std::f64::MAX;
     let mut max_rtt_r = std::f64::MIN;
     loop {
-        for (address, (has_answered, send, _, seq, addr_timer)) in addresses.lock().unwrap().iter_mut() {
+        for (address, (has_answered, send, _, seq, addr_timer)) in
+            addresses.lock().unwrap().iter_mut()
+        {
             match if address.is_ipv4() {
                 *send += 1;
                 *seq += 1;
@@ -341,6 +351,10 @@ fn do_ping(
             *timer = Instant::now();
         }
         loop {
+            let start_time = timer.read().unwrap();
+            if Instant::now().duration_since(*start_time) > *max_rtt {
+                break;
+            }
             match thread_rx
                 .lock()
                 .unwrap()
@@ -379,12 +393,7 @@ fn do_ping(
                     }
                     _ => {}
                 },
-                Err(_) => {
-                    let start_time = timer.read().unwrap();
-                    if Instant::now().duration_since(*start_time) > *max_rtt {
-                        break;
-                    }
-                }
+                Err(_) => {}
             }
         }
         for (address, (has_answered, _, _, _, _)) in addresses.lock().unwrap().iter() {
@@ -446,7 +455,11 @@ mod tests {
         if am_root() {
             let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
         } else {
-            writeln!(&mut io::stdout(), "The test 'create_new_ping_util' was skipped as it needs to be run as root").unwrap();
+            writeln!(
+                &mut io::stdout(),
+                "The test 'create_new_ping_util' was skipped as it needs to be run as root"
+            )
+            .unwrap();
         }
     }
 
@@ -456,7 +469,11 @@ mod tests {
         if am_root() {
             let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
         } else {
-            writeln!(&mut io::stdout(), "The test 'create_bad_ping_util' was skipped as it needs to be run as root").unwrap();
+            writeln!(
+                &mut io::stdout(),
+                "The test 'create_bad_ping_util' was skipped as it needs to be run as root"
+            )
+            .unwrap();
             panic!();
         }
     }
