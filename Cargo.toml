@@ -3,7 +3,7 @@ name = "librping"
 version = "0.1.0"
 authors = ["tooraj taraz <tooraj.info@gmail.com>"]
 edition = "2018"
-
+description = "Fast Rust ping library"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
