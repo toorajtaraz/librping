@@ -1,8 +1,9 @@
 //! Fast and multithread Ping Library.
 //!
 //! [`librpingrs`]: https://github.com/toorajtaraz/librping
-extern crate ansi_term;
+
 extern crate pnet;
+extern crate ansi_term;
 
 use ansi_term::Colour::RGB;
 use pnet::packet::icmp::echo_reply::EchoReplyPacket;
@@ -71,13 +72,14 @@ pub struct Ping {
     pub rx: Arc<Mutex<Receiver<PingResult>>>,
     pub timer: Arc<RwLock<Instant>>,
     pub run: Arc<Mutex<bool>>,
+    pub receive_time_out: Arc<usize>
 }
 
 /// This block implements Ping struct.
 impl Ping {
     /// Creates new Ping and returns PingRes.
     /// It requiers root privileges.
-    pub fn new(max_rtt: Option<u16>, size: Option<usize>) -> PingRes {
+    pub fn new(receive_time_out: Option<usize>, max_rtt: Option<u16>, size: Option<usize>) -> PingRes {
         let addresses: BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)> =
             BTreeMap::new();
         let (send_handle, recieve_handle) = channel();
@@ -108,7 +110,15 @@ impl Ping {
             tx,
             timer: Arc::new(RwLock::new(Instant::now())),
             run: Arc::new(Mutex::new(false)),
+            receive_time_out: Arc::new(100)
         };
+
+        if let Some(receive_time_out) = receive_time_out {
+            if receive_time_out == 0 {
+                return Err(String::from("BAX RECEIVE TIMEOUT"));
+            }
+            ping.receive_time_out = Arc::new(receive_time_out);
+        }
 
         if let Some(rtt_value) = max_rtt {
             if rtt_value == 0 {
@@ -147,6 +157,7 @@ impl Ping {
         let timer = self.timer.clone();
         let max_rtt = self.max_rtt.clone();
         let size = self.size;
+        let receive_time_out = self.receive_time_out.clone();
 
         {
             let mut run = self.run.lock().unwrap();
@@ -163,6 +174,7 @@ impl Ping {
                 transport_txv6,
                 addrs,
                 max_rtt,
+                receive_time_out
             );
         });
     }
@@ -321,6 +333,7 @@ fn do_ping(
     txv6: Arc<Mutex<TransportSender>>,
     addresses: Arc<Mutex<BTreeMap<AddressToBePinged, (bool, u64, u64, u16, Instant)>>>,
     max_rtt: Arc<Duration>,
+    recieve_time_out: Arc<usize>
 ) {
     let mut min_rtt_r = std::f64::MAX;
     let mut max_rtt_r = std::f64::MIN;
@@ -366,7 +379,7 @@ fn do_ping(
             match thread_rx
                 .lock()
                 .unwrap()
-                .recv_timeout(Duration::from_millis(100))
+                .recv_timeout(Duration::from_millis(*recieve_time_out as u64))
             {
                 Ok(result) => match result {
                     PingResult {
@@ -461,7 +474,7 @@ mod tests {
     #[test]
     fn create_new_ping_util() {
         if am_root() {
-            let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
+            let (_, _) = Ping::new(Some(10), Some(2000), Some(128)).unwrap();
         } else {
             writeln!(
                 &mut io::stdout(),
@@ -475,7 +488,7 @@ mod tests {
     #[should_panic]
     fn create_bad_ping_util() {
         if am_root() {
-            let (_, _) = Ping::new(Some(2000), Some(128)).unwrap();
+            let (_, _) = Ping::new(Some(10), Some(2000), Some(128)).unwrap();
         } else {
             writeln!(
                 &mut io::stdout(),
