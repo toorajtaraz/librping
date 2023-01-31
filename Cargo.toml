@@ -1,6 +1,6 @@
 [package]
 name = "librping"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["tooraj taraz <tooraj.info@gmail.com>"]
 edition = "2018"
 description = "Fast Rust ping library"
